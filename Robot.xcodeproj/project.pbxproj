@@ -7,27 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D475DAFB18CDA01400D8BB93 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D475DAFA18CDA01400D8BB93 /* main.cpp */; };
-		D475DAFD18CDA01400D8BB93 /* Robot.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = D475DAFC18CDA01400D8BB93 /* Robot.1 */; };
+		D475DB0D18CDA07000D8BB93 /* InitShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D475DB0818CDA07000D8BB93 /* InitShader.cpp */; };
+		D475DB1118CDA0B000D8BB93 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D475DB1018CDA0B000D8BB93 /* OpenGL.framework */; };
+		D475DB1318CDA0B700D8BB93 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D475DB1218CDA0B700D8BB93 /* GLUT.framework */; };
+		D475DB1518CDA12900D8BB93 /* fshader81.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = D475DB0418CDA07000D8BB93 /* fshader81.glsl */; };
+		D475DB1618CDA12900D8BB93 /* vshader81.glsl in CopyFiles */ = {isa = PBXBuildFile; fileRef = D475DB0B18CDA07000D8BB93 /* vshader81.glsl */; };
+		D475DB1818CDA36000D8BB93 /* myrobot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D475DB1718CDA36000D8BB93 /* myrobot.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		D475DAF518CDA01400D8BB93 /* CopyFiles */ = {
+		D475DB1418CDA11E00D8BB93 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			dstPath = "";
+			dstSubfolderSpec = 7;
 			files = (
-				D475DAFD18CDA01400D8BB93 /* Robot.1 in CopyFiles */,
+				D475DB1518CDA12900D8BB93 /* fshader81.glsl in CopyFiles */,
+				D475DB1618CDA12900D8BB93 /* vshader81.glsl in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		D475DAF718CDA01400D8BB93 /* Robot */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Robot; sourceTree = BUILT_PRODUCTS_DIR; };
-		D475DAFA18CDA01400D8BB93 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		D475DAFC18CDA01400D8BB93 /* Robot.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = Robot.1; sourceTree = "<group>"; };
+		D475DB0418CDA07000D8BB93 /* fshader81.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fshader81.glsl; sourceTree = "<group>"; };
+		D475DB0618CDA07000D8BB93 /* Angel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Angel.h; sourceTree = "<group>"; };
+		D475DB0718CDA07000D8BB93 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		D475DB0818CDA07000D8BB93 /* InitShader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InitShader.cpp; sourceTree = "<group>"; };
+		D475DB0918CDA07000D8BB93 /* mat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mat.h; sourceTree = "<group>"; };
+		D475DB0A18CDA07000D8BB93 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
+		D475DB0B18CDA07000D8BB93 /* vshader81.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vshader81.glsl; sourceTree = "<group>"; };
+		D475DB1018CDA0B000D8BB93 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		D475DB1218CDA0B700D8BB93 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		D475DB1718CDA36000D8BB93 /* myrobot.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = myrobot.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -35,6 +48,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D475DB1318CDA0B700D8BB93 /* GLUT.framework in Frameworks */,
+				D475DB1118CDA0B000D8BB93 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,6 +59,8 @@
 		D475DAEE18CDA01400D8BB93 = {
 			isa = PBXGroup;
 			children = (
+				D475DB1218CDA0B700D8BB93 /* GLUT.framework */,
+				D475DB1018CDA0B000D8BB93 /* OpenGL.framework */,
 				D475DAF918CDA01400D8BB93 /* Robot */,
 				D475DAF818CDA01400D8BB93 /* Products */,
 			);
@@ -60,10 +77,24 @@
 		D475DAF918CDA01400D8BB93 /* Robot */ = {
 			isa = PBXGroup;
 			children = (
-				D475DAFA18CDA01400D8BB93 /* main.cpp */,
-				D475DAFC18CDA01400D8BB93 /* Robot.1 */,
+				D475DB1718CDA36000D8BB93 /* myrobot.cpp */,
+				D475DB0418CDA07000D8BB93 /* fshader81.glsl */,
+				D475DB0B18CDA07000D8BB93 /* vshader81.glsl */,
+				D475DB0518CDA07000D8BB93 /* include */,
 			);
 			path = Robot;
+			sourceTree = "<group>";
+		};
+		D475DB0518CDA07000D8BB93 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				D475DB0618CDA07000D8BB93 /* Angel.h */,
+				D475DB0718CDA07000D8BB93 /* common.h */,
+				D475DB0818CDA07000D8BB93 /* InitShader.cpp */,
+				D475DB0918CDA07000D8BB93 /* mat.h */,
+				D475DB0A18CDA07000D8BB93 /* vec.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -75,7 +106,7 @@
 			buildPhases = (
 				D475DAF318CDA01400D8BB93 /* Sources */,
 				D475DAF418CDA01400D8BB93 /* Frameworks */,
-				D475DAF518CDA01400D8BB93 /* CopyFiles */,
+				D475DB1418CDA11E00D8BB93 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -117,7 +148,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D475DAFB18CDA01400D8BB93 /* main.cpp in Sources */,
+				D475DB1818CDA36000D8BB93 /* myrobot.cpp in Sources */,
+				D475DB0D18CDA07000D8BB93 /* InitShader.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
