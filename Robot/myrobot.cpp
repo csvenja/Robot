@@ -53,6 +53,7 @@ GLfloat  Theta[NumAngles] = { 0.0 };
 const int  Quit = 4;
 
 bool isTopView = false;
+bool FetchMode = false;
 point4 old_position;
 point4 new_position;
 
@@ -298,9 +299,14 @@ int
 main( int argc, char **argv )
 {
     glutInit( &argc, argv );
-//    old_position = point4(*argv[1], *argv[2], *argv[3], 1.0);
-//    new_position = point4(*argv[4], *argv[5], *argv[6], 1.0);
-
+    if (argc > 1) {
+        FetchMode = true;
+        old_position = point4(*argv[1], *argv[2], *argv[3], 1.0);
+        new_position = point4(*argv[4], *argv[5], *argv[6], 1.0);
+        if (strcmp(argv[7], "-tv") == 0) {
+            isTopView = true;
+        }
+    }
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     glutInitWindowSize( 512, 512 );
     glutCreateWindow( "robot" );
@@ -318,7 +324,12 @@ main( int argc, char **argv )
     glutAddMenuEntry( "base", Base );
     glutAddMenuEntry( "lower arm", LowerArm );
     glutAddMenuEntry( "upper arm", UpperArm );
+    if (isTopView) {
+    glutAddMenuEntry( "side view", TopView);
+    }
+    else {
     glutAddMenuEntry( "top view", TopView);
+    }
     glutAddMenuEntry( "quit", Quit );
     glutAttachMenu( GLUT_MIDDLE_BUTTON );
 
