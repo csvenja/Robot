@@ -1,4 +1,3 @@
-
 #include "Angel.h"
 
 typedef Angel::vec4 point4;
@@ -32,7 +31,6 @@ color4 vertex_colors[8] = {
     color4( 0.0, 1.0, 1.0, 1.0 )   // cyan
 };
 
-
 // Parameters controlling the size of the Robot's arm
 const GLfloat BASE_HEIGHT      = 2.0;
 const GLfloat BASE_WIDTH       = 5.0;
@@ -47,12 +45,16 @@ GLuint ModelView, Projection;
 
 // Array of rotation angles (in degrees) for each rotation axis
 enum { Base = 0, LowerArm = 1, UpperArm = 2, NumAngles = 3 };
+const int TopView = 3;
 int      Axis = Base;
 GLfloat  Theta[NumAngles] = { 0.0 };
 
 // Menu option values
 const int  Quit = 4;
 
+bool isTopView = false;
+point4 old_position;
+point4 new_position;
 
 //----------------------------------------------------------------------------
 
@@ -131,21 +133,32 @@ lower_arm()
 
 //----------------------------------------------------------------------------
 
+void idle() {
+    glutPostRedisplay();
+}
+
 void
 display( void )
 {
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // Accumulate ModelView Matrix as we traverse the tree
-    model_view = RotateY(Theta[Base] );
+    if (isTopView) {
+        model_view = ( Translate(0, BASE_WIDTH, 0) *
+                      RotateX(270.0) );
+        model_view *= RotateY(Theta[Base]);
+    }
+    else {
+        model_view = RotateY(Theta[Base]);
+    }
     base();
 
     model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
-		    RotateZ(Theta[LowerArm]) );
+            RotateZ(Theta[LowerArm]) );
     lower_arm();
 
     model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
-		    RotateZ(Theta[UpperArm]) );
+            RotateZ(Theta[UpperArm]) );
     upper_arm();
 
     glutSwapBuffers();
@@ -224,6 +237,15 @@ menu( int option )
     if ( option == Quit ) {
 	exit( EXIT_SUCCESS );
     }
+    else if (option == TopView) {
+        isTopView = !isTopView;
+        if (isTopView) {
+            glutChangeToMenuEntry(TopView+1, "side view", TopView);
+        }
+        else {
+            glutChangeToMenuEntry(TopView+1, "top view", TopView);
+        }
+    }
     else {
 	Axis = option;
     }
@@ -276,6 +298,9 @@ int
 main( int argc, char **argv )
 {
     glutInit( &argc, argv );
+//    old_position = point4(*argv[1], *argv[2], *argv[3], 1.0);
+//    new_position = point4(*argv[4], *argv[5], *argv[6], 1.0);
+
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     glutInitWindowSize( 512, 512 );
     glutCreateWindow( "robot" );
@@ -286,12 +311,14 @@ main( int argc, char **argv )
     glutReshapeFunc( reshape );
     glutKeyboardFunc( keyboard );
     glutMouseFunc( mouse );
+    glutIdleFunc( idle );
 
     glutCreateMenu( menu );
     // Set the menu values to the relevant rotation axis values (or Quit)
     glutAddMenuEntry( "base", Base );
     glutAddMenuEntry( "lower arm", LowerArm );
     glutAddMenuEntry( "upper arm", UpperArm );
+    glutAddMenuEntry( "top view", TopView);
     glutAddMenuEntry( "quit", Quit );
     glutAttachMenu( GLUT_MIDDLE_BUTTON );
 
