@@ -1,4 +1,7 @@
 #include "Angel.h"
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
 
 typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
@@ -38,6 +41,7 @@ const GLfloat LOWER_ARM_HEIGHT = 5.0;
 const GLfloat LOWER_ARM_WIDTH  = 0.5;
 const GLfloat UPPER_ARM_HEIGHT = 5.0;
 const GLfloat UPPER_ARM_WIDTH  = 0.5;
+const GLfloat BALL_RADIUS      = 0.25;
 
 // Shader transformation matrices
 mat4  model_view;
@@ -54,8 +58,14 @@ const int  Quit = 4;
 
 bool isTopView = false;
 bool FetchMode = false;
+bool withBall = false;
+bool finishFetch = false;
 point4 old_position;
 point4 new_position;
+point4 cur_position;
+GLfloat oldTheta[NumAngles] = { 0.0 };
+GLfloat newTheta[NumAngles] = { 0.0 };
+
 
 //----------------------------------------------------------------------------
 
@@ -134,6 +144,24 @@ lower_arm()
 
 //----------------------------------------------------------------------------
 
+void
+ball()
+{
+    double ball_y = cur_position.y;
+    if (withBall) {
+        ball_y -= BASE_HEIGHT + LOWER_ARM_HEIGHT;
+    }
+    mat4 instance = ( Translate( cur_position.x, ball_y, cur_position.z ) *
+                     Scale( BALL_RADIUS * 2,
+                           BALL_RADIUS * 2,
+                           BALL_RADIUS * 2 ) );
+
+    glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view * instance );
+    glDrawArrays( GL_TRIANGLES, 0, NumVertices );
+}
+
+//----------------------------------------------------------------------------
+
 void idle() {
     glutPostRedisplay();
 }
@@ -142,25 +170,47 @@ void
 display( void )
 {
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
     // Accumulate ModelView Matrix as we traverse the tree
     if (isTopView) {
         model_view = ( Translate(0, BASE_WIDTH, 0) *
                       RotateX(270.0) );
-        model_view *= RotateY(Theta[Base]);
     }
     else {
-        model_view = RotateY(Theta[Base]);
+        model_view = ( RotateX(0) );
     }
-    base();
 
-    model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
-            RotateZ(Theta[LowerArm]) );
-    lower_arm();
+    if (FetchMode) {
+        if (!withBall || finishFetch) {
+            ball();
+        }
+        model_view *= RotateY(Theta[Base]);
+        base();
+        if (withBall) {
+            ball();
+        }
+        model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
+                       RotateZ(Theta[LowerArm]) );
+        lower_arm();
 
-    model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
-            RotateZ(Theta[UpperArm]) );
-    upper_arm();
+        model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
+                       RotateZ(Theta[UpperArm]) );
+        upper_arm();
+
+    }
+    else {
+        if (finishFetch) {
+            ball();
+        }
+        model_view *= RotateY(Theta[Base]);
+        base();
+        model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
+                RotateZ(Theta[LowerArm]) );
+        lower_arm();
+
+        model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
+                RotateZ(Theta[UpperArm]) );
+        upper_arm();
+    }
 
     glutSwapBuffers();
 }
@@ -295,16 +345,61 @@ keyboard( unsigned char key, int x, int y )
 
 //----------------------------------------------------------------------------
 
+double
+cosLaw(double a, double b, double c)
+{
+    return acos((pow(a, 2) + pow(b, 2) - pow(c, 2)) / (2 * a * b)) * 180 / M_PI;
+}
+
 int
 main( int argc, char **argv )
 {
     glutInit( &argc, argv );
     if (argc > 1) {
         FetchMode = true;
-        old_position = point4(*argv[1], *argv[2], *argv[3], 1.0);
-        new_position = point4(*argv[4], *argv[5], *argv[6], 1.0);
+        old_position = point4(atof(argv[1]), atof(argv[2]), atof(argv[3]), 1.0);
+        new_position = point4(atof(argv[4]), atof(argv[5]), atof(argv[6]), 1.0);
+        cur_position = old_position;
         if (strcmp(argv[7], "-tv") == 0) {
             isTopView = true;
+        }
+
+        double oldTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(old_position.x, old_position.y)));
+        double oldBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(old_position.x, old_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
+        double oldBallBottomTheta = atan(old_position.x / old_position.y) * 180 / M_PI;
+        oldTheta[0] = atan(old_position.z / old_position.x) * 180 / M_PI;
+        if (old_position.x < 0) {
+            oldTheta[1] = oldBallBottomTheta - oldBottomTheta;
+            oldTheta[2] = 180 - oldTopTheta;
+        }
+        else {
+            oldTheta[1] = oldBottomTheta - oldBallBottomTheta;
+            oldTheta[2] = oldTopTheta - 180;
+        }
+        if (oldTheta[1] < 0.0) {
+            oldTheta[1] += 360.0;
+        }
+        if (oldTheta[2] < 0.0) {
+            oldTheta[2] += 360.0;
+        }
+
+        double newTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(new_position.x, new_position.y)));
+        double newBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(new_position.x, new_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
+        double newBallBottomTheta = atan(new_position.x / new_position.y) * 180 / M_PI;
+        newTheta[0] = atan(new_position.z / new_position.x) * 180 / M_PI;
+        if (new_position.x < 0) {
+            newTheta[1] = newBallBottomTheta - newBottomTheta;
+            newTheta[2] = 180 - newTopTheta;
+        }
+        else {
+            newTheta[1] = newBottomTheta - newBallBottomTheta;
+            newTheta[2] = newTopTheta - 180;
+        }
+        if (newTheta[1] < 0.0) {
+            newTheta[1] += 360.0;
+        }
+        if (newTheta[2] < 0.0) {
+            newTheta[2] += 360.0;
         }
     }
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );

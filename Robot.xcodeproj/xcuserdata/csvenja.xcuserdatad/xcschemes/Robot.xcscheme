@@ -59,8 +59,12 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "3 5 4 0 0 0 -tv"
+            argument = "3.0 5.0 4.0 0 0 0 -sv"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = ""
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
