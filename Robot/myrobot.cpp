@@ -65,6 +65,7 @@ point4 new_position;
 point4 cur_position;
 GLfloat oldTheta[NumAngles] = { 0.0 };
 GLfloat newTheta[NumAngles] = { 0.0 };
+GLfloat moveTime[NumAngles] = { 0.0 };
 timeval startTime;
 double speed = 360 / 5000; //360 per 5000ms(5s)
 
@@ -185,6 +186,7 @@ setWithBall()
 {
     withBall = true;
     gettimeofday(&startTime, NULL);
+# warning 换targetTheta，换moveTime，换startTheta
 }
 
 void
@@ -192,6 +194,17 @@ setFinishFetch()
 {
     withBall = false;
     finishFetch = true;
+}
+
+int
+sign(double x)
+{
+    if (x < 0) {
+        return -1;
+    }
+    else {
+        return 1;
+    }
 }
 
 void
@@ -208,17 +221,44 @@ display( void )
     }
 
     if (FetchMode) {
+# warning 合并!withBall和withBall
         if (!withBall) { // Initial theta to oldTheta
             ball();
+            bool moved = false;
+# warning 合并成move函数
+            if (elapsed() < moveTime[Base]) {
+# warning 加startTheta
+                Theta[Base] = elapsed() * speed * sign(oldTheta[Base]);
+                if (Theta[Base] < 0.0) {
+                    Theta[Base] += 360.0;
+                }
+                moved = true;
+            }
             model_view *= RotateY(Theta[Base]);
             base();
+
+            if (elapsed() < moveTime[LowerArm]) {
+                Theta[LowerArm] = elapsed() * speed * sign(oldTheta[LowerArm]);
+                if (Theta[LowerArm] < 0.0) {
+                    Theta[LowerArm] += 360.0;
+                }
+                moved = true;
+            }
             model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
                            RotateZ(Theta[LowerArm]) );
             lower_arm();
+
+            if (elapsed() < moveTime[UpperArm]) {
+                Theta[UpperArm] = elapsed() * speed * sign(oldTheta[UpperArm]);
+                if (Theta[UpperArm] < 0.0) {
+                    Theta[UpperArm] += 360.0;
+                }
+                moved = true;
+            }
             model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
                            RotateZ(Theta[UpperArm]) );
             upper_arm();
-            if (Theta[Base] >= oldTheta[Base] && Theta[LowerArm] >= oldTheta[LowerArm] && Theta[UpperArm] >= oldTheta[UpperArm]) {
+            if (!moved) {
                 setWithBall();
             }
         }
@@ -420,7 +460,11 @@ main( int argc, char **argv )
             oldTheta[UpperArm] = oldTopTheta - 180;
         }
         old_position.y += BASE_HEIGHT;
+        moveTime[Base] = abs(oldTheta[Base]) / speed;
+        moveTime[LowerArm] = abs(oldTheta[LowerArm]) / speed;
+        moveTime[UpperArm] = abs(oldTheta[UpperArm]) / speed;
 
+#warning 挪到setWithBall里去，把oldTheta改成targetTheta
         new_position.y -= BASE_HEIGHT;
         double newTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(new_position.x, new_position.y)));
         double newBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(new_position.x, new_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
