@@ -1,7 +1,7 @@
 #include "Angel.h"
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
+#include <sys/time.h>
 
 typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
@@ -22,7 +22,7 @@ point4 vertices[8] = {
     point4(  0.5, -0.5, -0.5, 1.0 )
 };
 
-// RGBA olors
+// RGBA colors
 color4 vertex_colors[8] = {
     color4( 0.0, 0.0, 0.0, 1.0 ),  // black
     color4( 1.0, 0.0, 0.0, 1.0 ),  // red
@@ -65,7 +65,8 @@ point4 new_position;
 point4 cur_position;
 GLfloat oldTheta[NumAngles] = { 0.0 };
 GLfloat newTheta[NumAngles] = { 0.0 };
-
+timeval startTime;
+double speed = 360 / 5000; //360 per 5000ms(5s)
 
 //----------------------------------------------------------------------------
 
@@ -91,6 +92,17 @@ colorcube()
     quad( 6, 5, 1, 2 );
     quad( 4, 5, 6, 7 );
     quad( 5, 4, 0, 1 );
+}
+
+int
+elapsed()
+{
+    timeval current;
+    gettimeofday(&current, NULL);
+    double elapsedTime;
+    elapsedTime = (current.tv_sec - startTime.tv_sec) * 1000.0;
+    elapsedTime += (current.tv_usec - startTime.tv_usec) / 1000.0;
+    return int(elapsedTime); // ms
 }
 
 //----------------------------------------------------------------------------
@@ -162,8 +174,24 @@ ball()
 
 //----------------------------------------------------------------------------
 
-void idle() {
+void
+idle()
+{
     glutPostRedisplay();
+}
+
+void
+setWithBall()
+{
+    withBall = true;
+    gettimeofday(&startTime, NULL);
+}
+
+void
+setFinishFetch()
+{
+    withBall = false;
+    finishFetch = true;
 }
 
 void
@@ -180,21 +208,35 @@ display( void )
     }
 
     if (FetchMode) {
-        if (!withBall || finishFetch) {
+        if (!withBall) { // Initial theta to oldTheta
             ball();
+            model_view *= RotateY(Theta[Base]);
+            base();
+            model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
+                           RotateZ(Theta[LowerArm]) );
+            lower_arm();
+            model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
+                           RotateZ(Theta[UpperArm]) );
+            upper_arm();
+            if (Theta[Base] >= oldTheta[Base] && Theta[LowerArm] >= oldTheta[LowerArm] && Theta[UpperArm] >= oldTheta[UpperArm]) {
+                setWithBall();
+            }
         }
-        model_view *= RotateY(Theta[Base]);
-        base();
-        if (withBall) {
+        else if (withBall) { // oldTheta to newTheta
+            model_view *= RotateY(Theta[Base]);
+            base();
             ball();
-        }
-        model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
-                       RotateZ(Theta[LowerArm]) );
-        lower_arm();
+            model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
+                           RotateZ(Theta[LowerArm]) );
+            lower_arm();
 
-        model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
-                       RotateZ(Theta[UpperArm]) );
-        upper_arm();
+            model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
+                           RotateZ(Theta[UpperArm]) );
+            upper_arm();
+            if (Theta[Base] == newTheta[Base] && Theta[LowerArm] == newTheta[LowerArm] && Theta[UpperArm] == newTheta[UpperArm]) {
+                setFinishFetch();
+            }
+        }
 
     }
     else {
@@ -364,48 +406,43 @@ main( int argc, char **argv )
             isTopView = true;
         }
 
+        old_position.y -= BASE_HEIGHT;
         double oldTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(old_position.x, old_position.y)));
         double oldBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(old_position.x, old_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
         double oldBallBottomTheta = atan(old_position.x / old_position.y) * 180 / M_PI;
-        oldTheta[0] = atan(old_position.z / old_position.x) * 180 / M_PI;
+        oldTheta[Base] = atan(old_position.z / old_position.x) * 180 / M_PI;
         if (old_position.x < 0) {
-            oldTheta[1] = oldBallBottomTheta - oldBottomTheta;
-            oldTheta[2] = 180 - oldTopTheta;
+            oldTheta[LowerArm] = oldBallBottomTheta - oldBottomTheta;
+            oldTheta[UpperArm] = 180 - oldTopTheta;
         }
         else {
-            oldTheta[1] = oldBottomTheta - oldBallBottomTheta;
-            oldTheta[2] = oldTopTheta - 180;
+            oldTheta[LowerArm] = oldBottomTheta - oldBallBottomTheta;
+            oldTheta[UpperArm] = oldTopTheta - 180;
         }
-        if (oldTheta[1] < 0.0) {
-            oldTheta[1] += 360.0;
-        }
-        if (oldTheta[2] < 0.0) {
-            oldTheta[2] += 360.0;
-        }
+        old_position.y += BASE_HEIGHT;
 
+        new_position.y -= BASE_HEIGHT;
         double newTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(new_position.x, new_position.y)));
         double newBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(new_position.x, new_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
         double newBallBottomTheta = atan(new_position.x / new_position.y) * 180 / M_PI;
-        newTheta[0] = atan(new_position.z / new_position.x) * 180 / M_PI;
+        newTheta[Base] = atan(new_position.z / new_position.x) * 180 / M_PI;
         if (new_position.x < 0) {
-            newTheta[1] = newBallBottomTheta - newBottomTheta;
-            newTheta[2] = 180 - newTopTheta;
+            newTheta[LowerArm] = newBallBottomTheta - newBottomTheta;
+            newTheta[UpperArm] = 180 - newTopTheta;
         }
         else {
-            newTheta[1] = newBottomTheta - newBallBottomTheta;
-            newTheta[2] = newTopTheta - 180;
+            newTheta[LowerArm] = newBottomTheta - newBallBottomTheta;
+            newTheta[UpperArm] = newTopTheta - 180;
         }
-        if (newTheta[1] < 0.0) {
-            newTheta[1] += 360.0;
-        }
-        if (newTheta[2] < 0.0) {
-            newTheta[2] += 360.0;
-        }
+        new_position.y += BASE_HEIGHT;
+        newTheta[Base] = newTheta[Base] - oldTheta[Base];
+        newTheta[LowerArm] = newTheta[LowerArm] - oldTheta[LowerArm];
+        newTheta[UpperArm] = newTheta[UpperArm] - oldTheta[UpperArm];
     }
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     glutInitWindowSize( 512, 512 );
     glutCreateWindow( "robot" );
-
+    gettimeofday(&startTime, NULL);
     init();
 
     glutDisplayFunc( display );
