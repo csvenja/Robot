@@ -69,7 +69,7 @@ GLfloat startTheta[NumAngles] = { 0.0 };
 GLfloat targetTheta[NumAngles] = { 0.0 };
 GLfloat moveTime[NumAngles] = { 0.0 };
 timeval startTime;
-GLfloat speed = 180.0 / 5000.0; // 180 per 5000ms (5s)
+GLfloat speed = 360.0 / 5000.0; // 180 per 5000ms (5s)
 
 //----------------------------------------------------------------------------
 
@@ -111,9 +111,9 @@ elapsed()
 void
 setMoveTime()
 {
-    moveTime[Base] = abs(targetTheta[Base] - startTheta[Base]) / speed;
-    moveTime[LowerArm] = abs(targetTheta[LowerArm] - startTheta[LowerArm]) / speed;
-    moveTime[UpperArm] = abs(targetTheta[UpperArm] - startTheta[UpperArm]) / speed;
+    moveTime[Base] = fabs(targetTheta[Base] - startTheta[Base]) / speed;
+    moveTime[LowerArm] = fabs(targetTheta[LowerArm] - startTheta[LowerArm]) / speed;
+    moveTime[UpperArm] = fabs(targetTheta[UpperArm] - startTheta[UpperArm]) / speed;
 }
 
 //----------------------------------------------------------------------------
@@ -176,7 +176,8 @@ ball()
                            BALL_RADIUS * 2 ) );
 
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view * instance );
-    glDrawArrays( GL_TRIANGLES, 0, NumVertices );
+//    glDrawArrays( GL_TRIANGLES, 0, NumVertices );
+    glutSolidSphere(BALL_RADIUS, 50, 50);
 }
 
 //----------------------------------------------------------------------------
@@ -187,7 +188,7 @@ idle()
     glutPostRedisplay();
 }
 
-int
+double
 sign(double x)
 {
     if (x < 0) {
@@ -214,14 +215,15 @@ cosLaw(double a, double b, double c)
 bool
 move(int part)
 {
-    int elapsed_time = elapsed();
-    if (elapsed_time < moveTime[part]) {
-        Theta[part] = startTheta[part] + min(elapsed_time, moveTime[part]) * speed * sign(targetTheta[part] - startTheta[part]);
+    double elapsed_time = elapsed();
+    if (elapsed_time <= moveTime[part]) {
+        Theta[part] = startTheta[part] + elapsed_time * speed * sign(targetTheta[part] - startTheta[part]);
         if (Theta[part] < 0.0) {
             Theta[part] += 360.0;
         }
         return true;
     }
+    Theta[part] = targetTheta[part];
     return false;
 }
 
@@ -257,9 +259,9 @@ setFinishFetch()
     startTheta[Base] = newTheta[Base];
     startTheta[LowerArm] = newTheta[LowerArm];
     startTheta[UpperArm] = newTheta[UpperArm];
-    targetTheta[Base] = 0.0;
-    targetTheta[LowerArm] = 0.0;
-    targetTheta[UpperArm] = 0.0;
+    targetTheta[Base] = 0;
+    targetTheta[LowerArm] = 0;
+    targetTheta[UpperArm] = 0;
     gettimeofday(&startTime, NULL);
     setMoveTime();
 }
@@ -287,21 +289,23 @@ display( void )
     }
 
     if (FetchMode) {
-        bool moved = false;
+        bool baseMoved = false;
+        bool lowerArmMoved = false;
+        bool upperArmMoved = false;
         if (!withBall) {
             ball();
         }
 
-        moved = move(Base);
+        baseMoved = move(Base);
         model_view *= RotateY(Theta[Base]);
         base();
 
-        moved = move(LowerArm);
+        lowerArmMoved = move(LowerArm);
         model_view *= ( Translate(0.0, BASE_HEIGHT, 0.0) *
                        RotateZ(Theta[LowerArm]) );
         lower_arm();
 
-        moved = move(UpperArm);
+        upperArmMoved = move(UpperArm);
         model_view *= ( Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
                        RotateZ(Theta[UpperArm]) );
         upper_arm();
@@ -310,7 +314,7 @@ display( void )
             ball();
         }
 
-        if (!moved) {
+        if (!baseMoved && !lowerArmMoved && !upperArmMoved) {
             if (!withBall & !finishFetch) {
                 setWithBall();
             }
@@ -379,7 +383,8 @@ init( void )
     Projection = glGetUniformLocation( program, "Projection" );
 
     glEnable( GL_DEPTH );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+//    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glClearColor( 1.0, 1.0, 1.0, 1.0 ); 
 }
@@ -477,44 +482,59 @@ main( int argc, char **argv )
     if (argc > 1) {
         old_position = point4(atof(argv[1]), atof(argv[2]), atof(argv[3]), 1.0);
         new_position = point4(atof(argv[4]), atof(argv[5]), atof(argv[6]), 1.0);
+        if (old_position.x == 0) {
+            old_position.x = 0.000000001;
+        }
+        if (new_position.x == 0) {
+            new_position.x = 0.000000001;
+        }
         FetchMode = true;
         cur_position = old_position;
         if (strcmp(argv[7], "-tv") == 0) {
             isTopView = true;
         }
 
-        oldTheta[Base] = atan(old_position.z / old_position.x) * 180 / M_PI;
-        double tmp = old_position.x;
-        old_position.x = sqrt(pow(old_position.x, 2) + pow(old_position.z, 2));
-        old_position.y -= BASE_HEIGHT;
-        double oldTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(old_position.x, old_position.y)));
-        double oldBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(old_position.x, old_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
-        double oldBallBottomTheta = atan(old_position.x / old_position.y) * 180 / M_PI;
-        oldTheta[LowerArm] = oldBottomTheta - oldBallBottomTheta;
-        oldTheta[UpperArm] = oldTopTheta - 180;
-        if (old_position.x < 0) {
-            oldTheta[LowerArm] = -oldTheta[LowerArm];
-            oldTheta[UpperArm] = -oldTheta[UpperArm];
+        {
+            oldTheta[Base] = -atan(old_position.z / old_position.x) * 180.0 / M_PI;
+            double origin_old_x = old_position.x;
+            old_position.x = sqrt(pow(old_position.x, 2) + pow(old_position.z, 2));
+            old_position.y -= BASE_HEIGHT;
+            double oldTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(old_position.x, old_position.y)));
+            double oldBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(old_position.x, old_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
+            double oldBallBottomTheta = atan(old_position.x / old_position.y) * 180.0 / M_PI;
+            if (old_position.y < 0) {
+                oldBallBottomTheta += 180.0;
+            }
+            oldTheta[LowerArm] = oldBottomTheta - oldBallBottomTheta;
+            oldTheta[UpperArm] = oldTopTheta - 180.0;
+            if (origin_old_x < 0) {
+                oldTheta[LowerArm] = -oldTheta[LowerArm];
+                oldTheta[UpperArm] = -oldTheta[UpperArm];
+            }
+            old_position.x = origin_old_x;
+            old_position.y += BASE_HEIGHT;
         }
-        old_position.x = tmp;
-        old_position.y += BASE_HEIGHT;
 
-        newTheta[Base] = atan(new_position.z / new_position.x) * 180 / M_PI;
-        tmp = new_position.x;
-        new_position.x = sqrt(pow(new_position.x, 2) + pow(new_position.z, 2));
-        new_position.y -= BASE_HEIGHT;
-        double newTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(new_position.x, new_position.y)));
-        double newBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(new_position.x, new_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
-        double newBallBottomTheta = atan(new_position.x / new_position.y) * 180 / M_PI;
-        newTheta[LowerArm] = newBottomTheta - newBallBottomTheta;
-        newTheta[UpperArm] = newTopTheta - 180;
-        if (new_position.x < 0) {
-            newTheta[Base] = -newTheta[Base];
-            newTheta[LowerArm] = -newTheta[LowerArm];
-            newTheta[UpperArm] = -newTheta[UpperArm];
+        {
+            newTheta[Base] = -atan(new_position.z / new_position.x) * 180.0 / M_PI;
+            double origin_new_x = new_position.x;
+            new_position.x = sqrt(pow(new_position.x, 2) + pow(new_position.z, 2));
+            new_position.y -= BASE_HEIGHT;
+            double newTopTheta = cosLaw(LOWER_ARM_HEIGHT, UPPER_ARM_HEIGHT+BALL_RADIUS, length(vec2(new_position.x, new_position.y)));
+            double newBottomTheta = cosLaw(LOWER_ARM_HEIGHT, length(vec2(new_position.x, new_position.y)), UPPER_ARM_HEIGHT+BALL_RADIUS);
+            double newBallBottomTheta = atan(new_position.x / new_position.y) * 180.0 / M_PI;
+            if (new_position.y < 0) {
+                newBallBottomTheta += 180.0;
+            }
+            newTheta[LowerArm] = newBottomTheta - newBallBottomTheta;
+            newTheta[UpperArm] = newTopTheta - 180.0;
+            if (origin_new_x < 0) {
+                newTheta[LowerArm] = -newTheta[LowerArm];
+                newTheta[UpperArm] = -newTheta[UpperArm];
+            }
+            new_position.x = origin_new_x;
+            new_position.y += BASE_HEIGHT;
         }
-        new_position.x = tmp;
-        new_position.y += BASE_HEIGHT;
 
         targetTheta[Base] = oldTheta[Base];
         targetTheta[LowerArm] = oldTheta[LowerArm];
