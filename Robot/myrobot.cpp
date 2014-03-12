@@ -269,9 +269,6 @@ setFinishFetch()
 void
 setRotateBack()
 {
-    Theta[Base] = 0;
-    Theta[LowerArm] = 0;
-    Theta[UpperArm] = 0;
     FetchMode = false;
 }
 
@@ -545,6 +542,11 @@ main( int argc, char **argv )
     glutInitWindowSize( 512, 512 );
     glutCreateWindow( "robot" );
     gettimeofday(&startTime, NULL);
+
+#ifndef __APPLE__
+	glewInit();
+#endif
+
     init();
 
     glutDisplayFunc( display );
